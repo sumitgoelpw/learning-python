@@ -1,2 +1,18 @@
+# platform
 .DS_Store
+
+# editor
+.idea
+
+# nodejs
+coverage
+node_modules
+npm-debug.log
+
+# python
+*.py[cod]
 .ropeproject
+venv
+
+# project
+logs

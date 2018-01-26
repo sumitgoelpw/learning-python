@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 """Lookup hostname and ping status on multiple IPs fast and easy.
 
-I used to get a long list of IP addresses to work on but by looking at the
-IP addresses it was hard for me to determine what systems were we talking
-about exactly. So I created this script to provide me two things, first
-check if IP address is ping-able or not and second lookup the hostname. I
-can put all the IP addresses in a file, one IP address per line, and then
-run the script with the -f option and filename to provide the information
-I needed to figure out my next step. The program has been tested on
-Mac OS X 10.10.1 using Python 2.7.6 and RHEL 6 using Python 2.6.6.
+I used to get a long list of IP addresses to work on, but by looking at the IP
+addresses, it was hard for me to determine what systems were we talking about
+precisely. So I created this script to give me two things, first, check if IP
+address is pingable or not and second to lookup the hostname. I can put all the
+IP addresses in a file, one IP address per line, and then run the script with
+the -f option and filename to provide the information I needed to figure out my
+next step.
+
+The script is known to work with Python 2.
 """
 
 __author__ = 'Sumit Goel'
@@ -22,28 +23,27 @@ import fileinput
 
 
 def usage():
+    """Print the usage."""
     print 'Usage: {0} [ -i ip-address ] [ -f filename ]'.format(__file__)
 
 
 def lookup(ipaddr):
-    global response
+    """Check if the IP/Hostname pingable and lookup the DNS name."""
     ipaddr = ipaddr.lstrip()
     ipaddr = ipaddr.rstrip()
     ipaddr = ipaddr.replace(' ', '')
-    try:
-        response = subprocess.call('ping -c 1 {0}'.format(ipaddr), shell= \
-            True, stdout=open('/dev/null', 'w'), stderr= \
-            subprocess.STDOUT)
-    except:
-        print 'Unspecified Error'
+
+    response = subprocess.call('ping -c 1 {0}'.format(ipaddr),
+                               shell=True,
+                               stdout=open('/dev/null', 'w'),
+                               stderr=subprocess.STDOUT)
 
     if response == 0:
         try:
             out = socket.gethostbyaddr(ipaddr)
             print '{0}: Alive, Hostname: {1}'.format(ipaddr, out[0])
-        except:
-            print '{0}: Alive, Hostname: COULD NOT BE RESOLVED'.format(
-                ipaddr)
+        except socket.herror as error:
+            print '{0}: Alive, Hostname: {1}'.format(ipaddr, error)
     elif response == 2:
         print '{0}: NO RESPONSE'.format(ipaddr)
     elif response == 68:
@@ -53,7 +53,7 @@ def lookup(ipaddr):
 
 
 def main():
-    global args
+    """Execute the logic."""
     if len(sys.argv) == 1:
         usage()
         sys.exit(1)
@@ -61,35 +61,34 @@ def main():
         parser = argparse.ArgumentParser(description='Program checks if IP \
                 address is ping-able or not and lookup the hostname.')
         parser.add_argument('-i', metavar='IP Address', dest='ipaddr',
-            help='Specify the IP address')
+                            help='Specify the IP address')
         parser.add_argument('-f', metavar='Filename', dest='filename',
-            help='Specify the file name and file path containing the \
-                list of IP addresses and ensure that the IP addresses are \
-                listed in one column or per line')
+                            help='Specify the file name and file path \
+                            containing the list of IP addresses and ensure \
+                            that the IP addresses are listed in one column or \
+                            per line')
         try:
             args = parser.parse_args()
-        except argparse.ArgumentError, e:
-            print 'Error:', str(e)
+        except argparse.ArgumentError, error:
+            print 'Error:', str(error)
 
         if args.ipaddr:
             try:
                 socket.inet_aton(args.ipaddr)
-            except socket.error, e:
-                print 'Error:', str(e)
+            except socket.error, error:
+                print 'Error:', str(error)
                 sys.exit(1)
-            try:
-                lookup(args.ipaddr)
-            except:
-                print 'Unspecified Error'
+
+            lookup(args.ipaddr)
 
         if args.filename:
             iplist = fileinput.input(args.filename)
             if __name__ == '__main__':
                 psize = multiprocessing.cpu_count()
-                p = multiprocessing.Pool(processes=psize)
-                p.map(lookup, iplist)
-                p.close()
-                p.join()
+                parallel = multiprocessing.Pool(processes=psize)
+                parallel.map(lookup, iplist)
+                parallel.close()
+                parallel.join()
 
 
 if __name__ == '__main__':
